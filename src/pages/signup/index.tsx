@@ -6,27 +6,34 @@ import { Input } from '../../components/Input';
 import { api } from '../../services/api';
 import { useForm } from "react-hook-form";
 import { Container, Title, Column, TitleSignup, SubtitleSignup, Row, Wrapper } from './styles';
+import { IFormDataSignup } from './types';
+import * as yup from 'yup';
+import { yupResolver } from '@hookform/resolvers/yup';
+
+const schema = yup.object({
+    name: yup.string().required('Nome é obrigatório'),
+    email: yup.string().email('E-mail inválido').required('E-mail é obrigatório'),
+    password: yup.string().min(6, 'A senha deve ter pelo menos 6 caracteres').required('Senha é obrigatória'),
+    confirmarSenha: yup.string()
+        .oneOf([yup.ref('password'), undefined ], 'As senhas devem coincidir')
+        .required('Confirmação de senha é obrigatória'),
+}).required();
 
 const Signup = () => {
     const navigate = useNavigate();
 
-    const { control, handleSubmit, formState: { errors } } = useForm({
-        reValidateMode: 'onChange',
+    const { control, handleSubmit, formState: { errors } } = useForm<IFormDataSignup>({
+        resolver: yupResolver(schema),
         mode: 'onChange',
     });
 
-    const onSubmit = async (formData) => {
-        // Verifica se as senhas coincidem
-        if (formData.senha !== formData.confirmarSenha) {
-            alert('As senhas não coincidem');
-            return;
-        }
-
+    const onSubmit = async (formData: IFormDataSignup) => {
+        // Verifica se as senhas coincidem (essa parte já é tratada pelo Yup)
         try {
             const response = await api.post('/users', {
-                nome: formData.nome,
+                name: formData.name,
                 email: formData.email,
-                senha: formData.senha,
+                password: formData.password
             });
 
             if (response.status === 201) {
@@ -55,11 +62,11 @@ const Signup = () => {
                             <Input
                                 placeholder="Nome"
                                 leftIcon={<MdPerson />}
-                                name="nome"
+                                name="name"
                                 control={control}
                                 rules={{ required: "Nome é obrigatório" }}
                             />
-                            {errors.nome && <span>{errors.nome.message}</span>}
+                            {errors.name && <span>{errors.name.message}</span>}
 
                             <Input
                                 placeholder="E-mail"
@@ -80,11 +87,11 @@ const Signup = () => {
                                 type="password"
                                 placeholder="Senha"
                                 leftIcon={<MdLock />}
-                                name="senha"
+                                name="password"
                                 control={control}
                                 rules={{ required: "Senha é obrigatória" }}
                             />
-                            {errors.senha && <span>{errors.senha.message}</span>}
+                            {errors.password && <span>{errors.password.message}</span>}
 
                             <Input
                                 type="password"
